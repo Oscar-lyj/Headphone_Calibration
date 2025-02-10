@@ -6,7 +6,7 @@ import os
 
 
 # defining the constants
-f = pd.read_csv("D:\\李彦君\其他\\coding\\headphone_calibration\\calibration\\reference.csv")
+f = pd.read_csv("headphone_calibration\\calibration\\reference.csv")
 freqs = f["frequency"].values # defining the frequency
 
 # defining the reference curves
@@ -168,7 +168,7 @@ def cal_eq_gaussians(object_array, reference_array, freqs, num_bands):
     plt.grid(True, which="both", linestyle="--", linewidth=0.5)
     plt.title("Frequency Response Correction (Gaussian Fit)")
     plt.show()
-    graph_path = os.path.join('D:\\李彦君\\其他\\coding\\headphone_calibration\\app\\static\\uploads', 'corrected_response.png')
+    graph_path = os.path.join('headphone_calibration\\app\\static\\uploads', 'corrected_response.png')
      # Save plot as a file in the static folder
     # plt.savefig(graph_path)
     plt.close()
