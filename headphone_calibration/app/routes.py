@@ -10,7 +10,7 @@ from calibration.process_image_module import interactive_image_selection
 def init_routes(app):
     """Initialize routes for the Flask app."""
     
-    UPLOAD_FOLDER = 'D:\\李彦君\\其他\\coding\\headphone_calibration\\app\\static\\uploads'
+    UPLOAD_FOLDER = 'headphone_calibration\\app\\static\\uploads'
     ALLOWED_EXTENSIONS = {'csv', 'png'}
 
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -83,7 +83,7 @@ def init_routes(app):
                             ref_selected_region = [ref_rgb_selected['r'], ref_rgb_selected['g'], ref_rgb_selected['b']]
                             
                         interactive_image_selection(custom_file, reference_mode, reference_sen, ref_max_position, ref_min_position, ref_selected_region, 2)
-                        SAVE_PATH = "D:\\李彦君\\其他\\coding\\headphone_calibration\\app\\static\\uploads"     
+                        SAVE_PATH = "headphone_calibration\\app\\static\\uploads"     
                         reference_path = os.path.join(SAVE_PATH, "extracted_reference_curve.csv")                    
 
                 # Process CSV file for EQ band calibration
@@ -265,7 +265,7 @@ def init_routes(app):
                         ref_selected_region = session.get("ref_selected_region")
                                                    
                     interactive_image_selection(custom_filepath, reference_mode, reference_sen, ref_max_position, ref_min_position, ref_selected_region, 2)
-                    SAVE_PATH = "D:\\李彦君\\其他\\coding\\headphone_calibration\\app\\static\\uploads"     
+                    SAVE_PATH = "headphone_calibration\\app\\static\\uploads"     
                     reference_path = os.path.join(SAVE_PATH, "extracted_reference_curve.csv")   
     
             selected_region_temp = session.get('selected_region')
