@@ -9,7 +9,7 @@ img = None
 sens = 60  # Default sensitivity
 
 # Save path
-SAVE_PATH = "D:\\李彦君\\其他\\coding\\headphone_calibration\\app\\static\\uploads"
+SAVE_PATH = "headphone_calibration\\app\\static\\uploads"
 
 def extract_curve(image, selected_region, sens):
     """Extract the curve from the selected bounding box (Mode 1)."""
