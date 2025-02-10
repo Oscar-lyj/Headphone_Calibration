@@ -40,7 +40,7 @@
             <br>
 
             <!-- Container for image and canvas -->
-            <div id="reference_image_preview"  style="position: relative; overflow: hidden; border: 1px solid #ccc;">
+            <div id="reference_image_container"  style="position: relative; overflow: hidden; border: 1px solid #ccc;">
                 <img id="custom_png_image" src="#" alt="Uploaded Reference Image Preview" style="display: none; object-fit: contain;">
                 <canvas id="selection_canvas" style="position: absolute; top: 0; left: 0; display: none; border: 1px solid black;"></canvas>
             </div>
@@ -159,83 +159,112 @@
     let rgbSelected = {};
     
     function updateSelectionMode() {
-        selectionMode = parseInt(document.getElementById("ref_selection_mode").value);
+        let canvas = document.getElementById("selection_canvas");
+        let ctx = canvas.getContext("2d");
+        let img = document.getElementById("custom_png_image");  // Use the reference image
+        let selectionMode = parseInt(document.getElementById("ref_selection_mode").value);
+        
+        // Remove previous event listeners
         canvas.removeEventListener('mousedown', startBlockSelection);
         canvas.removeEventListener('click', startColorSelection);
+        
+        // Clear canvas and redraw the reference image
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
-
+    
+        // Set up the correct event listener for the chosen mode
         if (selectionMode === 1) {
-            canvas.addEventListener('mousedown', startBlockSelection);
+            canvas.addEventListener('mousedown', startBlockSelection);  // Block selection
         } else if (selectionMode === 2) {
-            canvas.addEventListener('click', startColorSelection);
+            canvas.addEventListener('click', startColorSelection);  // Color selection
         }
     }
 
-    function startBlockSelection(event) {
-        startX = event.offsetX;
-        startY = event.offsetY;
-        canvas.addEventListener('mousemove', drawSelectionBox);
-        canvas.addEventListener('mouseup', endBlockSelection);
-    }
+// Block selection for reference image (use the correct canvas and image)
+function startBlockSelection(event) {
+    let canvas = document.getElementById("selection_canvas");
+    let ctx = canvas.getContext("2d");
+    let img = document.getElementById("custom_png_image");  // Reference image for selection
 
+    let startX = event.offsetX;
+    let startY = event.offsetY;
+
+    // Draw the selection box
     function drawSelectionBox(event) {
-        endX = event.offsetX;
-        endY = event.offsetY;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
+        let endX = event.offsetX;
+        let endY = event.offsetY;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear canvas before drawing
+        ctx.drawImage(img, 0, 0);  // Ensure the reference image is redrawn every time
         ctx.strokeStyle = "red";
         ctx.strokeRect(startX, startY, endX - startX, endY - startY);
     }
 
+    // End block selection
     function endBlockSelection() {
         canvas.removeEventListener('mousemove', drawSelectionBox);
         canvas.removeEventListener('mouseup', endBlockSelection);
-        selectedRegion = {
+
+        // Store the selected region (relative to the reference image)
+        let selectedRegion = {
             x1: startX,
             y1: startY,
-            x2: endX,
-            y2: endY
+            x2: event.offsetX,
+            y2: event.offsetY
         };
-        console.log("Selected region:", selectedRegion);
         document.getElementById("ref_selected_region").value = JSON.stringify(selectedRegion);
     }
 
+    // Set up mouse events for drawing the block
+    canvas.addEventListener('mousemove', drawSelectionBox);
+    canvas.addEventListener('mouseup', endBlockSelection);
+}
+
+    // Color selection for reference image (use the correct canvas and image)
     function startColorSelection(event) {
+        let canvas = document.getElementById("selection_canvas");
+        let ctx = canvas.getContext("2d");
+        let img = document.getElementById("custom_png_image");  // Reference image for color selection
+
         let x = event.offsetX;
         let y = event.offsetY;
         let imageData = ctx.getImageData(x, y, 1, 1).data;
-        rgbSelected = {
+        
+        let rgbSelected = {
             r: imageData[0],
             g: imageData[1],
             b: imageData[2]
         };
-        console.log("Selected RGB:", rgbSelected);
+        
         document.getElementById("ref_rgb_selected").value = JSON.stringify(rgbSelected);
-    
-        // Draw the orange cross immediately after selection
+        
+        // Draw a cross to indicate the selected pixel
         drawCross(x, y);
     }
-    
+
+    // Draw cross for color selection
     function drawCross(x, y) {
-        let crossSize = 8; // Length of the cross lines
-        let crossColor = "orange"; // Color of the cross
-    
-        // Clear the canvas and redraw the image
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-    
+        let canvas = document.getElementById("selection_canvas");
+        let ctx = canvas.getContext("2d");
+        let img = document.getElementById("custom_png_image");  // Reference image for drawing cross
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear the canvas
+        ctx.drawImage(img, 0, 0);  // Redraw the reference image
+
         // Draw the cross at the selected point
+        let crossSize = 8;
+        let crossColor = "orange";
+
         ctx.strokeStyle = crossColor;
         ctx.lineWidth = 4;
-    
-        // Horizontal line of the cross
+
+        // Horizontal line
         ctx.beginPath();
         ctx.moveTo(x - crossSize, y);
         ctx.lineTo(x + crossSize, y);
         ctx.stroke();
-    
-        // Vertical line of the cross
+
+        // Vertical line
         ctx.beginPath();
         ctx.moveTo(x, y - crossSize);
         ctx.lineTo(x, y + crossSize);
