@@ -180,45 +180,47 @@
         }
     }
 
-// Block selection for reference image (use the correct canvas and image)
-function startBlockSelection(event) {
-    let canvas = document.getElementById("selection_canvas");
-    let ctx = canvas.getContext("2d");
-    let img = document.getElementById("custom_png_image");  // Reference image for selection
+    // Block selection for reference image (use the correct canvas and image)
+    function startBlockSelection(event) {
+        let canvas = document.getElementById("selection_canvas");
+        let ctx = canvas.getContext("2d");
+        let img = document.getElementById("custom_png_image");  // Reference image for selection
 
-    let startX = event.offsetX;
-    let startY = event.offsetY;
+        let startX = event.offsetX;
+        let startY = event.offsetY;
+        let endX, endY;
 
-    // Draw the selection box
-    function drawSelectionBox(event) {
-        let endX = event.offsetX;
-        let endY = event.offsetY;
-        
-        ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear canvas before drawing
-        ctx.drawImage(img, 0, 0);  // Ensure the reference image is redrawn every time
-        ctx.strokeStyle = "red";
-        ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+        // Draw the selection box
+        function drawSelectionBox(event) {
+            endX = event.offsetX;
+            endY = event.offsetY;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear canvas before drawing
+            ctx.drawImage(img, 0, 0);  // Ensure the reference image is redrawn every time
+            ctx.strokeStyle = "red";
+            ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+        }
+
+        // End block selection
+        function endBlockSelection(event) {
+            // Remove mouse events after selection is done
+            canvas.removeEventListener('mousemove', drawSelectionBox);
+            canvas.removeEventListener('mouseup', endBlockSelection);
+
+            // Capture final mouse position (x2, y2) from the mouseup event
+            let selectedRegion = {
+                x1: startX,
+                y1: startY,
+                x2: event.offsetX,
+                y2: event.offsetY
+            };
+            document.getElementById("ref_selected_region").value = JSON.stringify(selectedRegion);
+        }
+
+        // Set up mouse events for drawing the block
+        canvas.addEventListener('mousemove', drawSelectionBox);
+        canvas.addEventListener('mouseup', endBlockSelection);
     }
-
-    // End block selection
-    function endBlockSelection() {
-        canvas.removeEventListener('mousemove', drawSelectionBox);
-        canvas.removeEventListener('mouseup', endBlockSelection);
-
-        // Store the selected region (relative to the reference image)
-        let selectedRegion = {
-            x1: startX,
-            y1: startY,
-            x2: event.offsetX,
-            y2: event.offsetY
-        };
-        document.getElementById("ref_selected_region").value = JSON.stringify(selectedRegion);
-    }
-
-    // Set up mouse events for drawing the block
-    canvas.addEventListener('mousemove', drawSelectionBox);
-    canvas.addEventListener('mouseup', endBlockSelection);
-}
 
     // Color selection for reference image (use the correct canvas and image)
     function startColorSelection(event) {
