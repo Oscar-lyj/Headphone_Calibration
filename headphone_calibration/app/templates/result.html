@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>CSV Calibration Results</h2>
+
+<!-- Dynamically load the image -->
+<!--............................................................ need to add the save image function back in process_csv_module-->
+<div style="text-align: center;">
+    <img src="{{ url_for('static', filename=graph_path) }}" alt="Frequency Response Graph" class="response-graph">
+</div>
+<style>
+    .response-graph {
+        width: 60%;  /* Adjust as needed */
+        height: auto; /* Maintain aspect ratio */
+        aspect-ratio: 1.3 / 1;
+        display: block;
+        margin: 0 auto; /* Center the image */
+    }
+</style>
+
+<h3>Calculated EQ Parameters</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Frequency (Hz)</th>
+            <th>Gain (dB)</th>
+            <th>Filter Type</th>
+            <th>Q Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in eq_bands %}
+        <tr>
+            <td>{{ row.frequency }}</td>
+            <td>{{ row.gain }}</td>
+            <td>{{ row.filter_type }}</td>
+            <td>{{ row.Q_value }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('upload_csv') }}" class="btn">Upload Another File (CSV)</a>
+<a href="{{ url_for('upload_png') }}" class="btn">Upload Another File (PNG)</a>
+{% endblock %}

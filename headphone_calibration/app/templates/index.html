@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Welcome to the Headphone Calibration Tool</h2>
+<p>This tool allows you to upload headphone frequency response data (CSV or PNG) and calibrate it against reference curves. You can either upload a CSV file or an image of the frequency curve. Follow the steps below to get started:</p>
+<ul>
+    <li>Upload a CSV file or PNG image of your headphone's frequency response curve.</li>
+    <br>
+    <li>For CSV files:</li>
+    <ul>
+        <li>Choose a reference curve and calibration settings.</li>
+    </ul>
+    <br>
+    <li>For PNG files:</li>
+    <ul>
+        <li>Select a curve extraction mode and sensitivity for extraction.</li>
+        <li>Fill in the minimum and maximum values of the curve.</li>
+        <li>Once upload is pressed, select the region or the point on the pop up window and press submitSelection.</li>
+    </ul>
+    <br>
+    <li>For Uploading personal reference curve:</li>
+    <ul>
+        <li>Upload a CSV or PNG file as reference.</li>
+        <li>For PNG file, select the mode of extraction and select the region or the point on the preview uploaded image.</li>
+    </ul>
+    <br>
+    <li>The results will be shown as a plot and a table/ </li>
+</ul>
+<a href="{{ url_for('upload_csv') }}" class="btn">Get Started (CSV)</a>
+<a href="{{ url_for('upload_png') }}" class="btn">Get Started (PNG)</a>
+{% endblock %}

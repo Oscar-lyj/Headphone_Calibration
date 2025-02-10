@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Upload Frequency Response Data</h2>
+
+<!-- Toggle between CSV and PNG upload options -->
+<div>
+    <label for="file_type">Choose File Type:</label>
+    <select id="file_type" onchange="toggleUploadForms()">
+        <option value="csv">CSV File</option>
+        <option value="png">PNG Image</option>
+    </select>
+</div>
+
+<!-- CSV Upload Form -->
+<form method="POST" enctype="multipart/form-data">
+    <label for="file_type">Select File Type:</label>
+    <select name="file_type" id="file_type">
+        <option value="csv">CSV</option>
+        <option value="png">PNG</option>
+    </select>
+    
+    <label for="file">Choose a File:</label>
+    <input type="file" name="file" id="file" required>
+
+    <!-- Reference curve selection (if needed) -->
+    <label for="reference_curve">Select Reference Curve:</label>
+    <select name="reference_curve" id="reference_curve">
+        <option value="0">In Ear (with Bass)</option>
+        <option value="1">In Ear (without Bass)</option>
+        <option value="2">Over Ear (with Bass)</option>
+        <option value="3">Over Ear (without Bass)</option>
+    </select>
+
+    <label for="bands">Number of EQ Bands (1-15):</label>
+    <input type="number" name="bands" id="bands" min="1" max="15" required>
+
+    <button type="submit">Upload</button>
+</form>
+
+<!-- PNG Upload Form -->
+<form id="png_upload_form" method="POST" enctype="multipart/form-data" class="upload-form" style="display: none;">
+    <label for="png_file">Upload PNG File:</label>
+    <input type="file" name="file" id="png_file" accept=".png" required>
+
+    <label for="selection_mode">Choose Curve Extraction Mode:</label>
+    <select name="selection_mode" id="selection_mode" required>
+        <option value="block_selection">Block Selection</option>
+        <option value="color_selection">Color Selection</option>
+    </select>
+
+    <label for="sensitivity">Sensitivity:</label>
+    <input type="range" name="sensitivity" id="sensitivity" min="30" max="90" step="1" value="1">
+
+    <button type="submit" class="btn">Upload PNG</button>
+</form>
+
+<script>
+    // Function to toggle between CSV and PNG forms
+    function toggleUploadForms() {
+        var fileType = document.getElementById('file_type').value;
+        var csvForm = document.getElementById('csv_upload_form');
+        var pngForm = document.getElementById('png_upload_form');
+        var customCurve = document.getElementById('custom_curve_upload');
+
+        if (fileType === 'csv') {
+            csvForm.style.display = 'block';
+            pngForm.style.display = 'none';
+        } else {
+            csvForm.style.display = 'none';
+            pngForm.style.display = 'block';
+        }
+
+        // Show custom reference file upload when custom curve is selected
+        document.getElementById('ref_curve').addEventListener('change', function() {
+            if (this.value === 'custom_curve') {
+                customCurve.style.display = 'block';
+            } else {
+                customCurve.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

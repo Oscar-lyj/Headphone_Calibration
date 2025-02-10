@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Calibration Results</h2>
+
+<!-- Flex container for chart -->
+<div style="display: flex; justify-content: center; align-items: center;">
+    <canvas id="freqChart"></canvas>
+</div>
+
+<style>
+    #freqChart {
+        width: 60%;
+        height: auto;
+        aspect-ratio: 1.3 / 1;
+        display: block;
+        margin: 0 auto;
+    }
+</style>
+
+<h3>EQ Parameters</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Frequency (Hz)</th>
+            <th>Gain (dB)</th>
+            <th>Filter Type</th>
+            <th>Q Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in eq_bands %}
+        <tr>
+            <td>{{ row.frequency }}</td>
+            <td>{{ row.gain }}</td>
+            <td>{{ row.filter_type }}</td>
+            <td>{{ row.Q_value }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('upload_csv') }}" class="btn">Upload Another File (CSV)</a>
+<a href="{{ url_for('upload_png') }}" class="btn">Upload Another File (PNG)</a>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const ctx = document.getElementById('freqChart').getContext('2d');
+
+        // Data from Flask (passed from backend)
+        const freqLabels = {{ freq_labels | tojson }};
+        const referenceData = {{ reference_curve | tojson }};
+        const originalData = {{ object_curve | tojson }};
+        const correctedData = {{ corrected_curve | tojson }};
+
+        // Define original and light colors
+        const colors = {
+            reference: 'lightgray',
+            original: 'red',
+            corrected: 'blue'
+        };
+
+        const lightColors = {
+            reference: '#e0e0e0',  // Very light gray
+            original: '#ffb3b3',    // Light red
+            corrected: '#b3d1ff'    // Light blue
+        };
+
+        // Chart.js setup
+        const freqChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: freqLabels,
+                datasets: [
+                    {
+                        label: 'Reference Curve',
+                        data: referenceData,
+                        borderColor: colors.reference,
+                        borderWidth: 2,
+                        pointRadius: 1,
+                        pointHoverRadius: 2,
+                        fill: false
+                    },
+                    {
+                        label: 'Original Curve',
+                        data: originalData,
+                        borderColor: colors.original,
+                        borderWidth: 2,
+                        pointRadius: 1,
+                        pointHoverRadius: 2,
+                        fill: false
+                    },
+                    {
+                        label: 'Corrected Curve',
+                        data: correctedData,
+                        borderColor: colors.corrected,
+                        borderWidth: 2,
+                        pointRadius: 1,
+                        pointHoverRadius: 2,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                animation: { duration: 0 },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            usePointStyle: true,
+                            generateLabels: function(chart) {
+                                return chart.data.datasets.map((dataset, i) => {
+                                    const isHidden = chart.getDatasetMeta(i).hidden;
+                                    return {
+                                        text: dataset.label,
+                                        fillStyle: isHidden ? lightColors[dataset.borderColor] : dataset.borderColor,
+                                        strokeStyle: isHidden ? lightColors[dataset.borderColor] : dataset.borderColor,
+                                        datasetIndex: i
+                                    };
+                                });
+                            }
+                        },
+                        onClick: function(e, legendItem, legend) {
+                            const index = legendItem.datasetIndex;
+                            const chart = legend.chart;
+                            const meta = chart.getDatasetMeta(index);
+
+                            // Toggle dataset visibility
+                            meta.hidden = !meta.hidden;
+
+                            // Force legend update with new colors
+                            chart.options.plugins.legend.labels.generateLabels(chart);
+                            chart.update();
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'logarithmic',
+                        title: { display: true, text: 'Frequency (Hz)' },
+                        ticks: {
+                            callback: function(value) {
+                                return Number(value).toLocaleString();
+                            }
+                        },
+                        afterBuildTicks: function(axis) {
+                            axis.ticks = axis.ticks.filter(tick => {
+                                const v = tick.value;
+                                return [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000].includes(v);
+                            });
+                        }
+                    },
+                    y: {
+                        title: { display: true, text: 'Gain (dB)' }
+                    }
+                }
+            }
+        });
+
+        // Fix for legend color updates
+        function updateLegendColors() {
+            freqChart.options.plugins.legend.labels.generateLabels = function(chart) {
+                return chart.data.datasets.map((dataset, i) => {
+                    const isHidden = chart.getDatasetMeta(i).hidden;
+                    return {
+                        text: dataset.label,
+                        fillStyle: isHidden ? lightColors[dataset.borderColor] : dataset.borderColor,
+                        strokeStyle: isHidden ? lightColors[dataset.borderColor] : dataset.borderColor,
+                        datasetIndex: i
+                    };
+                });
+            };
+            freqChart.update();
+        }
+
+        // Attach event listener to legend click
+        freqChart.options.plugins.legend.onClick = function(e, legendItem, legend) {
+            const index = legendItem.datasetIndex;
+            const chart = legend.chart;
+            const meta = chart.getDatasetMeta(index);
+
+            // Toggle dataset visibility
+            meta.hidden = !meta.hidden;
+
+            // Update legend colors
+            updateLegendColors();
+        };
+    });
+</script>
+{% endblock %}
+
+
+

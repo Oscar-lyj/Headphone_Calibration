@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block Selection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #canvasContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #imageCanvas {
+            max-width: 100%;
+            max-height: 100%;
+            border: 2px solid black;
+        }
+
+        #submitSelection {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: rgba(0, 123, 255, 0.8);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        #submitSelection:hover {
+            background-color: rgba(0, 86, 179, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <div id="canvasContainer">
+        <canvas id="imageCanvas"></canvas>
+        <button id="submitSelection">Submit Selection</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        let img = new Image();
+        let startX, startY, endX, endY, isDrawing = false;
+
+        img.src = "/static/uploads/{{ image_path }}";
+        img.onload = function () {
+            resizeCanvas();
+        };
+
+        function resizeCanvas() {
+            const aspectRatio = img.width / img.height;
+            const maxWidth = window.innerWidth;
+            const maxHeight = window.innerHeight;
+
+            if (maxWidth / aspectRatio <= maxHeight) {
+                canvas.width = maxWidth;
+                canvas.height = maxWidth / aspectRatio;
+            } else {
+                canvas.height = maxHeight;
+                canvas.width = maxHeight * aspectRatio;
+            }
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Mouse events for selecting a region
+        canvas.addEventListener('mousedown', (event) => {
+            isDrawing = true;
+            startX = event.offsetX;
+            startY = event.offsetY;
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            if (isDrawing) {
+                endX = event.offsetX;
+                endY = event.offsetY;
+                redrawCanvas();
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+                
+                // Shaded selection area
+                ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
+                ctx.fillRect(startX, startY, endX - startX, endY - startY);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+
+        document.getElementById('submitSelection').addEventListener('click', () => {
+            if (typeof startX === 'undefined' || typeof endX === 'undefined') {
+                alert('Please select a region before submitting.');
+                return;
+            }
+
+            const selectedRegion = [startX, startY, endX, endY];
+
+            fetch('/process_block_selection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ selectedRegion })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Selection submitted successfully.');
+                window.location.href = "/calibrate";
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</body>
+</html>

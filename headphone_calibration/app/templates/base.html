@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>{{ title }}</title>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Headphone Frequency Response Calibration</h1>
+            <nav>
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('upload_csv') }}">Upload CSV</a>
+                <a href="{{ url_for('upload_png') }}">Upload PNG</a>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Headphone Calibration Tool</p>
+        </div>
+    </footer>
+</body>
+</html>

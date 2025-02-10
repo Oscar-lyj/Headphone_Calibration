@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Upload Frequency Response Data (CSV)</h2>
+
+<form method="POST" action="{{ url_for('upload_csv') }}" enctype="multipart/form-data">
+    <label for="csv_file">Upload CSV File:</label>
+    <input type="file" name="csv_file" id="csv_file" accept=".csv" required>
+
+    <label for="bands">Number of EQ Bands (6-12):</label>
+    <input type="number" name="bands" id="bands" min="6" max="12" required>
+
+    <label for="reference_curve">Select Reference Curve:</label>
+    <select name="reference_curve" id="reference_curve" onchange="toggleCustomUpload()">
+        <option value="0">Harman Earphone (with Bass)</option>
+        <option value="1">Harman Earphone (without Bass)</option>
+        <option value="2">Harman Headphone (with Bass)</option>
+        <option value="3">Harman Headphone (without Bass)</option>
+        <option value="custom">Upload Personal Reference Curve</option>
+    </select>
+
+    <!-- Custom Reference Curve Upload Section -->
+    <div id="custom_curve_section" style="display: none;">
+        <label>Upload Reference Curve:</label>
+        <input type="radio" name="custom_curve_type" value="5" id="csv_option" onclick="showCustomUpload('csv')" checked> CSV
+        <input type="radio" name="custom_curve_type" value="4" id="png_option" onclick="showCustomUpload('png')"> PNG
+
+        <!-- CSV Upload -->
+        <div id="custom_csv_upload">
+            <label for="custom_csv">Upload CSV:</label>
+            <input type="file" name="custom_csv" id="custom_csv" accept=".csv">
+        </div>
+
+        <!-- PNG Upload -->
+        <div id="custom_png_upload" style="display: none;">
+            <label for="custom_png">Upload PNG:</label>
+            <input type="file" name="custom_png" id="custom_png" accept=".png" onchange="previewImage(event)">
+            <br>
+
+            <!-- Container for image and canvas -->
+            <div id="image_container" style="position: relative; overflow: hidden; border: 1px solid #ccc;">
+                <img id="uploaded_image" src="#" alt="Uploaded Image Preview" style="display: none; object-fit: contain;">
+                <canvas id="selection_canvas" style="position: absolute; top: 0; left: 0; display: none; border: 1px solid black;"></canvas>
+            </div>
+
+            <!-- Additional Inputs -->
+            <label for="ref_min_position">Min Position:</label>
+            <input type="number" name="ref_min_position" id="ref_min_position">
+
+            <label for="ref_max_position">Max Position:</label>
+            <input type="number" name="ref_max_position" id="ref_max_position">
+
+            <label for="ref_selection_mode">Selection Mode:</label>
+            <select name="ref_selection_mode" id="ref_selection_mode" onchange="updateSelectionMode()">
+                <option value="" selected>Select a Mode</option> <!-- Default blank option -->
+                <option value="1">Block Selection</option>
+                <option value="2">Color Selection</option>
+            </select>
+            <label for="ref_sensitivity">Sensitivity:</label>
+            <input type="range" name="ref_sensitivity" id="ref_sensitivity" min="30" max="90" value="60" oninput="updateSensitivityValue()">
+            <span id="ref_sensitivity_value">60</span>
+
+            <!-- Hidden fields to store selected values -->
+            <input type="hidden" name="ref_selected_region" id="ref_selected_region">
+            <input type="hidden" name="ref_rgb_selected" id="ref_rgb_selected">
+        </div>
+    </div>    
+
+    <button type="submit">Upload</button>
+</form>
+
+<script>
+    function toggleCustomUpload() {
+        var customSection = document.getElementById('custom_curve_section');
+        var refCurve = document.getElementById('reference_curve').value;
+    
+        if (refCurve === 'custom') {
+            customSection.style.display = 'block';
+        } else {
+            customSection.style.display = 'none';
+            document.getElementById('csv_option').checked = false;
+            document.getElementById('png_option').checked = false;
+        }
+    }
+
+    function showCustomUpload(type) {
+        document.getElementById('custom_csv_upload').style.display = (type === 'csv') ? 'block' : 'none';
+        document.getElementById('custom_png_upload').style.display = (type === 'png') ? 'block' : 'none';
+    }
+
+    let canvas = document.getElementById("selection_canvas");
+    let ctx = canvas.getContext("2d");
+    let img = document.getElementById("uploaded_image");
+    let selectionMode = 1;
+    let startX, startY, endX, endY;
+    let selectedRegion = {};
+    let rgbSelected = {};
+
+    function previewImage(event) {
+        let reader = new FileReader();
+        reader.onload = function () {
+            img.src = reader.result;
+            img.onload = function() {
+                img.style.display = "block";
+                canvas.style.display = "block";
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight ;
+                ctx.drawImage(img, 0, 0);
+
+                // Adjust the image container size based on image dimensions
+                let container = document.getElementById('image_container');
+                container.style.width = img.naturalWidth + 'px';
+                container.style.height = img.naturalHeight  + 'px';
+            };
+        };
+        reader.readAsDataURL(event.target.files[0]);
+    }
+
+    function updateSelectionMode() {
+        selectionMode = parseInt(document.getElementById("ref_selection_mode").value);
+        canvas.removeEventListener('mousedown', startBlockSelection);
+        canvas.removeEventListener('click', startColorSelection);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+
+        if (selectionMode === 1) {
+            canvas.addEventListener('mousedown', startBlockSelection);
+        } else if (selectionMode === 2) {
+            canvas.addEventListener('click', startColorSelection);
+        }
+    }
+
+    function startBlockSelection(event) {
+        startX = event.offsetX;
+        startY = event.offsetY;
+        canvas.addEventListener('mousemove', drawSelectionBox);
+        canvas.addEventListener('mouseup', endBlockSelection);
+    }
+
+    function drawSelectionBox(event) {
+        endX = event.offsetX;
+        endY = event.offsetY;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        ctx.strokeStyle = "red";
+        ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+    }
+
+    function endBlockSelection() {
+        canvas.removeEventListener('mousemove', drawSelectionBox);
+        canvas.removeEventListener('mouseup', endBlockSelection);
+        selectedRegion = {
+            x1: startX,
+            y1: startY,
+            x2: endX,
+            y2: endY
+        };
+        console.log("Selected region:", selectedRegion);
+        document.getElementById("ref_selected_region").value = JSON.stringify(selectedRegion);
+    }
+
+    function startColorSelection(event) {
+        let x = event.offsetX;
+        let y = event.offsetY;
+        let imageData = ctx.getImageData(x, y, 1, 1).data;
+        rgbSelected = {
+            r: imageData[0],
+            g: imageData[1],
+            b: imageData[2]
+        };
+        console.log("Selected RGB:", rgbSelected);
+        document.getElementById("ref_rgb_selected").value = JSON.stringify(rgbSelected);
+    
+        // Draw the orange cross immediately after selection
+        drawCross(x, y);
+    }
+    
+    function drawCross(x, y) {
+        let crossSize = 8; // Length of the cross lines
+        let crossColor = "orange"; // Color of the cross
+    
+        // Clear the canvas and redraw the image
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+    
+        // Draw the cross at the selected point
+        ctx.strokeStyle = crossColor;
+        ctx.lineWidth = 4;
+    
+        // Horizontal line of the cross
+        ctx.beginPath();
+        ctx.moveTo(x - crossSize, y);
+        ctx.lineTo(x + crossSize, y);
+        ctx.stroke();
+    
+        // Vertical line of the cross
+        ctx.beginPath();
+        ctx.moveTo(x, y - crossSize);
+        ctx.lineTo(x, y + crossSize);
+        ctx.stroke();
+    }
+
+    function updateSensitivityValue() {
+        let sensitivityValue = document.getElementById("ref_sensitivity").value;
+        document.getElementById("ref_sensitivity_value").textContent = sensitivityValue;
+    }
+</script>
+{% endblock %}

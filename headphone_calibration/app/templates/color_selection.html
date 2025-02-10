@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Selection Mode</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #canvasContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #imageCanvas {
+            max-width: 100%;
+            max-height: 100%;
+            border: 2px solid black;
+            cursor: crosshair;
+        }
+
+        #magnifierCanvas {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            border: 2px solid black;
+            width: 150px;
+            height: 150px;
+            background-color: white;
+        }
+
+        #submitSelection {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: rgba(0, 123, 255, 0.8);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        #submitSelection:hover {
+            background-color: rgba(0, 86, 179, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <div id="canvasContainer">
+        <canvas id="imageCanvas"></canvas>
+        <canvas id="magnifierCanvas"></canvas>
+        <button id="submitSelection">Submit Selected Color</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        let img = new Image();
+        let selectedColor = null;
+        let sensitivity = {{ sensitivity }};  // Sensitivity passed from server
+
+        // Load the image from the server (passed from routes.py)
+        img.src = `/static/uploads/{{ image_path }}`;
+        img.onload = function () {
+            resizeCanvas();
+        };
+
+        function resizeCanvas() {
+            const aspectRatio = img.width / img.height;
+            const maxWidth = window.innerWidth;
+            const maxHeight = window.innerHeight;
+
+            if (maxWidth / aspectRatio <= maxHeight) {
+                canvas.width = maxWidth;
+                canvas.height = maxWidth / aspectRatio;
+            } else {
+                canvas.height = maxHeight;
+                canvas.width = maxHeight * aspectRatio;
+            }
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        const magnifierCanvas = document.getElementById('magnifierCanvas');
+        const magnifierCtx = magnifierCanvas.getContext('2d');
+        const zoomFactor = 13;  // Magnification factor
+
+        // Magnifier box size
+        const magnifierBoxSize = magnifierCanvas.width;
+
+        // Capture the color when the user clicks on the canvas
+        canvas.addEventListener('click', (event) => {
+            const x = event.offsetX;
+            const y = event.offsetY;
+            selectedPoint = { x, y };
+
+            const pixelData = ctx.getImageData(x, y, 1, 1).data;
+            selectedColor = {
+                r: pixelData[0],
+                g: pixelData[1],
+                b: pixelData[2]
+            };
+            redrawCanvas(); // Redraw the image to include the selected mark
+        });
+
+        function drawCross(x, y) {
+            const size = 6; // Cross size
+            ctx.strokeStyle = "#FF8C00"; // Orange color
+            ctx.lineWidth = 4;
+        
+            // Draw 'X' cross
+            ctx.beginPath();
+            ctx.moveTo(x - size, y - size);
+            ctx.lineTo(x + size, y + size);
+            ctx.moveTo(x - size, y + size);
+            ctx.lineTo(x + size, y - size);
+            ctx.stroke();
+        }
+        
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+            if (selectedPoint) {
+                drawCross(selectedPoint.x, selectedPoint.y);
+            }
+        }
+
+        // Handle cursor movement and show magnified region in the magnifier canvas
+        canvas.addEventListener('mousemove', (event) => {
+            const x = event.offsetX;
+            const y = event.offsetY;
+
+            // Calculate the region to zoom in on
+            const magnifierSize = magnifierBoxSize / zoomFactor;
+            const srcX = Math.max(0, x - magnifierSize / 2);
+            const srcY = Math.max(0, y - magnifierSize / 2);
+            
+            // Clear magnifier canvas
+            magnifierCtx.clearRect(0, 0, magnifierCanvas.width, magnifierCanvas.height);
+
+            // Draw the magnified region in the magnifier canvas
+            magnifierCtx.drawImage(
+                canvas, 
+                srcX, srcY, magnifierSize, magnifierSize,  // Source region (the zoomed region)
+                0, 0, magnifierCanvas.width, magnifierCanvas.height // Destination (fill the magnifier canvas)
+            );
+
+            // Draw crosshair on the magnifier canvas
+            magnifierCtx.strokeStyle = 'red';
+            magnifierCtx.lineWidth = 1;
+
+            // Draw vertical and horizontal lines for the crosshair
+            magnifierCtx.beginPath();
+            magnifierCtx.moveTo(magnifierCanvas.width / 2, 0);
+            magnifierCtx.lineTo(magnifierCanvas.width / 2, magnifierCanvas.height);
+            magnifierCtx.moveTo(0, magnifierCanvas.height / 2);
+            magnifierCtx.lineTo(magnifierCanvas.width, magnifierCanvas.height / 2);
+            magnifierCtx.stroke();
+        });
+
+        // Send the selected color to the server for processing
+        document.getElementById('submitSelection').addEventListener('click', () => {
+            if (!selectedColor) {
+                alert("Please select a color first.");
+                return;
+            }
+
+            const data = {
+                color: selectedColor,
+                sensitivity: sensitivity
+            };
+
+            fetch('/process_color_selection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                  alert('Color selection submitted successfully.');
+                  window.location.href = "/calibrate";  // Redirect to calibration page
+              }).catch((error) => {
+                  console.error('Error:', error);
+              });
+        });
+    </script>
+</body>
+</html>
