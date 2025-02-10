@@ -293,30 +293,3 @@ def init_routes(app):
                                     corrected_curve=corrected_curve.tolist() if isinstance(corrected_curve, np.ndarray) else corrected_curve,
                                     freq_labels = freqs.tolist() if isinstance(corrected_curve, np.ndarray) else freqs)
     
-        # If it's a POST request, the same calibration logic can be applied
-        '''
-        if request.method == 'POST':
-            selected_region = session.get('selected_region')
-            mode = int(session.get('mode'))
-            sensitivity = int(session.get('sensitivity'))
-            max_pos = int(session.get('max_pos'))
-            min_pos = int(session.get('min_pos'))
-            filepath = session.get('filepath')
-            bands = int(session.get('bands'))
-            reference_curve = session.get('reference_curve')
-
-            if not selected_region:
-                flash("Region selection is missing.")
-                return redirect(url_for('upload_png'))
-
-            # Extract frequency response using the selected region
-            extracted_csv_path = os.path.join(app.config['UPLOAD_FOLDER'], "extracted_curve.csv")
-            interactive_image_selection(filepath, mode, sensitivity, max_pos, min_pos, selected_region)
-
-            # Process CSV to get EQ bands and generate graph
-            eq_bands, graph_path = process_csv(extracted_csv_path, bands, reference_curve)
-            graph_path_name = "uploads/corrected_response.png"
-
-            # Render result page with EQ bands and corrected graph
-            return render_template('result.html', eq_bands=eq_bands, graph_path=graph_path_name)
-        '''
